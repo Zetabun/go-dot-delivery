@@ -1,0 +1,52 @@
+{
+  "locations": [
+    {
+      "id": "DEPOT_BHAM",
+      "type": "depot",
+      "name": "Birmingham Depot",
+      "lng": -1.9027,
+      "lat": 52.4796,
+      "hubId": "HUB_CENTRE"
+    },
+    {
+      "id": "BIZ_OPACE",
+      "type": "business",
+      "name": "Opace Parcelworks (Test Business)",
+      "lng": -1.8902,
+      "lat": 52.4869,
+      "hubId": "HUB_CENTRE"
+    },
+    {
+      "id": "FUEL_DIGBETH",
+      "type": "fuel",
+      "name": "Fuel Stop: Digbeth",
+      "lng": -1.8720,
+      "lat": 52.4760,
+      "hubId": "HUB_EAST"
+    },
+    {
+      "id": "FUEL_JQ",
+      "type": "fuel",
+      "name": "Fuel Stop: Jewellery Quarter",
+      "lng": -1.9146,
+      "lat": 52.4918,
+      "hubId": "HUB_NW"
+    },
+    {
+      "id": "FUEL_EDGBASTON",
+      "type": "fuel",
+      "name": "Fuel Stop: Edgbaston",
+      "lng": -1.9316,
+      "lat": 52.4767,
+      "hubId": "HUB_SW"
+    },
+    {
+      "id": "GARAGE_ASTON",
+      "type": "garage",
+      "name": "Repair Garage: Aston",
+      "lng": -1.8889,
+      "lat": 52.5035,
+      "hubId": "HUB_NORTH"
+    }
+  ]
+}

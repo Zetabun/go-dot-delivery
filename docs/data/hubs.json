@@ -1,0 +1,9 @@
+{
+  "hubs": [
+    { "id": "HUB_SW",     "name": "Hub SW",     "lng": -1.9310, "lat": 52.4740 },
+    { "id": "HUB_CENTRE", "name": "Hub Centre", "lng": -1.8930, "lat": 52.4860 },
+    { "id": "HUB_EAST",   "name": "Hub East",   "lng": -1.8725, "lat": 52.4800 },
+    { "id": "HUB_NW",     "name": "Hub NW",     "lng": -1.9145, "lat": 52.4950 },
+    { "id": "HUB_NORTH",  "name": "Hub North",  "lng": -1.8890, "lat": 52.5050 }
+  ]
+}
