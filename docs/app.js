@@ -250,7 +250,71 @@
     })
   }).addTo(map).bindPopup("<b>Van</b><br/>Auto-routed via hub graph.");
 
-  // Restore previous session (if any) so a refresh doesn't wipe progress.
+  // ---------- Persistence (so refresh doesn't reset progress) ----------
+  // We store a small snapshot in localStorage. This is perfect for prototypes (GitHub Pages).
+  // NOTE: We intentionally do NOT store the full datasets (hubs/edges). Only the game state.
+  const STORAGE_KEY = "goDotDelivery_state_v1";
+
+  function saveState() {
+    try {
+      const snapshot = {
+        vehicle: {
+          pos: state.vehicle.pos,
+          fuel: state.vehicle.fuel,
+          dur: state.vehicle.dur,
+          currentLocationId: state.vehicle.currentLocationId
+        },
+        job: state.job,
+        mode: state.mode,
+        route: state.route,
+        routeIndex: state.routeIndex
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // Ignore storage errors (private browsing, etc.)
+    }
+  }
+  
+  // Save immediately when the user refreshes/closes the tab
+window.addEventListener("beforeunload", () => {
+  saveState();
+});
+
+// Save on pagehide as well (more reliable on some browsers, especially mobile/Safari)
+window.addEventListener("pagehide", () => {
+  saveState();
+});
+
+// Save if the tab becomes hidden (common on mobile / when switching tabs)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") saveState();
+});
+
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const snap = JSON.parse(raw);
+
+      if (snap?.vehicle?.pos) state.vehicle.pos = snap.vehicle.pos;
+      if (typeof snap?.vehicle?.fuel === "number") state.vehicle.fuel = snap.vehicle.fuel;
+      if (typeof snap?.vehicle?.dur === "number") state.vehicle.dur = snap.vehicle.dur;
+      if (typeof snap?.vehicle?.currentLocationId === "string") state.vehicle.currentLocationId = snap.vehicle.currentLocationId;
+
+      if (snap?.job) state.job = snap.job;
+      if (typeof snap?.mode === "string") state.mode = snap.mode;
+
+      if (Array.isArray(snap?.route)) state.route = snap.route;
+      if (typeof snap?.routeIndex === "number") state.routeIndex = snap.routeIndex;
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+// Restore previous session (if any) so a refresh doesn't wipe progress.
   const restored = loadState();
   if (restored) {
     vanMarker.setLatLng([state.vehicle.pos.lat, state.vehicle.pos.lng]);
@@ -284,66 +348,6 @@
 
     startJobBtn.disabled = !(j.status === "AVAILABLE" && state.mode === "IDLE");
     refuelBtn.disabled = !(state.mode === "IDLE");
-  }
-
-
-  // ---------- Persistence (so refresh doesn't reset progress) ----------
-  // We store a small snapshot in localStorage. This is perfect for prototypes (GitHub Pages).
-  // NOTE: We intentionally do NOT store the full datasets (hubs/edges). Only the game state.
-  const STORAGE_KEY = "goDotDelivery_state_v1";
-
-  function saveState() {
-    try {
-      const snapshot = {
-        vehicle: {
-          pos: state.vehicle.pos,
-          fuel: state.vehicle.fuel,
-          dur: state.vehicle.dur,
-          currentLocationId: state.vehicle.currentLocationId
-        },
-        job: state.job,
-        mode: state.mode,
-        route: state.route,
-        routeIndex: state.routeIndex
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    } catch {
-      // Ignore storage errors (private browsing, etc.)
-    }
-  }
-  
-  // Save immediately when the user refreshes/closes the tab
-window.addEventListener("beforeunload", () => {
-  saveState();
-});
-
-// Save if the tab becomes hidden (common on mobile / when switching tabs)
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") saveState();
-});
-
-
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return false;
-      const snap = JSON.parse(raw);
-
-      if (snap?.vehicle?.pos) state.vehicle.pos = snap.vehicle.pos;
-      if (typeof snap?.vehicle?.fuel === "number") state.vehicle.fuel = snap.vehicle.fuel;
-      if (typeof snap?.vehicle?.dur === "number") state.vehicle.dur = snap.vehicle.dur;
-      if (typeof snap?.vehicle?.currentLocationId === "string") state.vehicle.currentLocationId = snap.vehicle.currentLocationId;
-
-      if (snap?.job) state.job = snap.job;
-      if (typeof snap?.mode === "string") state.mode = snap.mode;
-
-      if (Array.isArray(snap?.route)) state.route = snap.route;
-      if (typeof snap?.routeIndex === "number") state.routeIndex = snap.routeIndex;
-
-      return true;
-    } catch {
-      return false;
-    }
   }
 
 
@@ -589,11 +593,6 @@ document.addEventListener("visibilitychange", () => {
   }
 
   function arrive() {
-    // Mark that we've reached the planned leg target.
-    if (state.legTargetId) {
-      state.vehicle.currentLocationId = state.legTargetId;
-    }
-    state.legTargetId = null;
 
     // When we finish the current route leg, we have arrived at nextLocId.
     if (state.nextLocId) state.currentLocId = state.nextLocId;
