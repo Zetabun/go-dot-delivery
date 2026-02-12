@@ -55,11 +55,21 @@
   // We inject a small status line into the HUD so you can immediately tell
   // whether the prototype is using REAL polylines or fallback data.
   // This avoids "is it working?" confusion when switching between datasets.
-  const hud = document.querySelector(".hud");
-  const statusEl = document.createElement("div");
-  statusEl.id = "dataStatus";
-  statusEl.style.cssText = "margin-top:6px;margin-bottom:8px;font-size:12px;opacity:.85";
-  hud.insertBefore(statusEl, hud.children[1]); // insert after title row
+  // Sidebar panel (previous versions used a floating ".hud" box).
+  // We insert the data status line into the sidebar so it's always visible.
+  const hud = document.getElementById("panel");
+  // Prefer an existing status element from the sidebar layout (so we don't duplicate IDs).
+  let statusEl = document.getElementById("dataStatus");
+  if (!statusEl) {
+    statusEl = document.createElement("div");
+    statusEl.id = "dataStatus";
+    statusEl.style.cssText = "margin-top:6px;margin-bottom:8px;font-size:12px;opacity:.85";
+    // Insert near the top of the sidebar (after the header block if present).
+    // Fallback: append.
+    const header = hud?.querySelector?.(".panelHeader");
+    if (header && header.nextSibling) hud.insertBefore(statusEl, header.nextSibling);
+    else hud?.appendChild?.(statusEl);
+  }
 
   function log(msg) {
     const t = new Date().toLocaleTimeString();
@@ -209,7 +219,9 @@
       pos: { lng: locations.get("DEPOT_BHAM").lng, lat: locations.get("DEPOT_BHAM").lat },
       // Track the last known POI the van is at (for leg planning / persistence)
       currentLocationId: "DEPOT_BHAM",
-      fuel: 8, fuelMax: 100,   // low fuel on purpose (forces dispatcher to refuel)
+      // Start with enough fuel to reliably reach the nearest fuel stop.
+      // Still low enough that the dispatcher will usually detour to refuel early.
+      fuel: 20, fuelMax: 100,
       dur: 88, durMax: 100,
       speedMps: 12.5,
       fuelPerKm: 3.0,
@@ -238,71 +250,7 @@
     })
   }).addTo(map).bindPopup("<b>Van</b><br/>Auto-routed via hub graph.");
 
-  // ---------- Persistence (so refresh doesn't reset progress) ----------
-  // We store a small snapshot in localStorage. This is perfect for prototypes (GitHub Pages).
-  // NOTE: We intentionally do NOT store the full datasets (hubs/edges). Only the game state.
-  const STORAGE_KEY = "goDotDelivery_state_v1";
-
-  function saveState() {
-    try {
-      const snapshot = {
-        vehicle: {
-          pos: state.vehicle.pos,
-          fuel: state.vehicle.fuel,
-          dur: state.vehicle.dur,
-          currentLocationId: state.vehicle.currentLocationId
-        },
-        job: state.job,
-        mode: state.mode,
-        route: state.route,
-        routeIndex: state.routeIndex
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    } catch {
-      // Ignore storage errors (private browsing, etc.)
-    }
-  }
-  
-  // Save immediately when the user refreshes/closes the tab
-window.addEventListener("beforeunload", () => {
-  saveState();
-});
-
-// Save on pagehide as well (more reliable on some browsers, especially mobile/Safari)
-window.addEventListener("pagehide", () => {
-  saveState();
-});
-
-// Save if the tab becomes hidden (common on mobile / when switching tabs)
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") saveState();
-});
-
-
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return false;
-      const snap = JSON.parse(raw);
-
-      if (snap?.vehicle?.pos) state.vehicle.pos = snap.vehicle.pos;
-      if (typeof snap?.vehicle?.fuel === "number") state.vehicle.fuel = snap.vehicle.fuel;
-      if (typeof snap?.vehicle?.dur === "number") state.vehicle.dur = snap.vehicle.dur;
-      if (typeof snap?.vehicle?.currentLocationId === "string") state.vehicle.currentLocationId = snap.vehicle.currentLocationId;
-
-      if (snap?.job) state.job = snap.job;
-      if (typeof snap?.mode === "string") state.mode = snap.mode;
-
-      if (Array.isArray(snap?.route)) state.route = snap.route;
-      if (typeof snap?.routeIndex === "number") state.routeIndex = snap.routeIndex;
-
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-// Restore previous session (if any) so a refresh doesn't wipe progress.
+  // Restore previous session (if any) so a refresh doesn't wipe progress.
   const restored = loadState();
   if (restored) {
     vanMarker.setLatLng([state.vehicle.pos.lat, state.vehicle.pos.lng]);
@@ -336,6 +284,66 @@ document.addEventListener("visibilitychange", () => {
 
     startJobBtn.disabled = !(j.status === "AVAILABLE" && state.mode === "IDLE");
     refuelBtn.disabled = !(state.mode === "IDLE");
+  }
+
+
+  // ---------- Persistence (so refresh doesn't reset progress) ----------
+  // We store a small snapshot in localStorage. This is perfect for prototypes (GitHub Pages).
+  // NOTE: We intentionally do NOT store the full datasets (hubs/edges). Only the game state.
+  const STORAGE_KEY = "goDotDelivery_state_v1";
+
+  function saveState() {
+    try {
+      const snapshot = {
+        vehicle: {
+          pos: state.vehicle.pos,
+          fuel: state.vehicle.fuel,
+          dur: state.vehicle.dur,
+          currentLocationId: state.vehicle.currentLocationId
+        },
+        job: state.job,
+        mode: state.mode,
+        route: state.route,
+        routeIndex: state.routeIndex
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // Ignore storage errors (private browsing, etc.)
+    }
+  }
+  
+  // Save immediately when the user refreshes/closes the tab
+window.addEventListener("beforeunload", () => {
+  saveState();
+});
+
+// Save if the tab becomes hidden (common on mobile / when switching tabs)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") saveState();
+});
+
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const snap = JSON.parse(raw);
+
+      if (snap?.vehicle?.pos) state.vehicle.pos = snap.vehicle.pos;
+      if (typeof snap?.vehicle?.fuel === "number") state.vehicle.fuel = snap.vehicle.fuel;
+      if (typeof snap?.vehicle?.dur === "number") state.vehicle.dur = snap.vehicle.dur;
+      if (typeof snap?.vehicle?.currentLocationId === "string") state.vehicle.currentLocationId = snap.vehicle.currentLocationId;
+
+      if (snap?.job) state.job = snap.job;
+      if (typeof snap?.mode === "string") state.mode = snap.mode;
+
+      if (Array.isArray(snap?.route)) state.route = snap.route;
+      if (typeof snap?.routeIndex === "number") state.routeIndex = snap.routeIndex;
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 
 

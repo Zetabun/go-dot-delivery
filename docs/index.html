@@ -7,76 +7,201 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <style>
-    html, body { height: 100%; margin: 0; background:#0b0f14; }
-    #map { height: 100%; width: 100%; }
 
-    .hud {
-      position: absolute; z-index: 1000; left: 12px; top: 12px; width: 360px;
-      background: rgba(10,12,16,0.82); color: #fff; padding: 12px; border-radius: 14px;
-      font: 14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      box-shadow: 0 6px 20px rgba(0,0,0,.35);
-      backdrop-filter: blur(6px);
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#111827;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border:rgba(255,255,255,.08);
+      --accent:#60a5fa;
+      --ok:#22c55e;
     }
-    .title { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
-    .title strong { font-size: 15px; }
-    .title span { opacity:.8; font-size: 12px; }
-    .row { display:flex; gap:10px; margin: 8px 0; }
-    .stat { flex:1; background: rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 12px; }
-    .stat strong { display:block; font-size:12px; opacity:.85; margin-bottom:2px; }
-    .bar { height:8px; border-radius:999px; background: rgba(255,255,255,0.14); overflow:hidden; margin-top:6px; }
-    .bar > div { height:100%; width:0%; background: rgba(255,255,255,0.9); }
-    .btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
-    button { border:0; border-radius:12px; padding:10px; cursor:pointer;
-             background: rgba(255,255,255,0.92); color:#000; font-weight:650; }
-    button:disabled { opacity:.45; cursor:not-allowed; }
-    .hint { font-size:12px; opacity:.8; margin-top:8px; }
-    .log { margin-top:10px; background: rgba(255,255,255,0.08);
-           padding:10px; border-radius:12px; max-height:220px; overflow:auto; font-size:12.5px; }
-    .log div { margin-bottom:6px; opacity:.95; }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;overflow:hidden;}
+
+    .wrap{display:grid;grid-template-columns:360px 1fr;height:100vh;}
+
+    /* Sidebar */
+    #panel{
+      border-right:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+      height:100vh;
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding:14px;
+      -webkit-overflow-scrolling:touch;
+    }
+    .panelHeader{
+      position:sticky;top:0;z-index:10;
+      padding:12px 12px 10px;
+      margin:-14px -14px 12px;
+      border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(17,24,39,.92), rgba(17,24,39,.70));
+      backdrop-filter: blur(10px);
+    }
+    .panelHeader .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+    .panelHeader h1{font-size:16px;margin:0;letter-spacing:.2px;}
+    .panelHeader p{font-size:12px;margin:3px 0 0;color:var(--muted);}
+
+    .btn{
+      appearance:none;border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:8px 10px;border-radius:10px;cursor:pointer;font-size:12px;
+    }
+    .btn:hover{background:rgba(255,255,255,.09)}
+    .btnPrimary{
+      border:0;
+      background:rgba(255,255,255,.92);
+      color:#000;
+      font-weight:700;
+    }
+    .btnPrimary:hover{filter:brightness(.98)}
+    .btn:disabled,.btnPrimary:disabled{opacity:.45;cursor:not-allowed}
+
+    .card{background:rgba(17,24,39,.70);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;}
+    .cardTitle{font-size:12px;color:var(--muted);margin:0 0 10px;letter-spacing:.2px;}
+
+    .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .kpi{border:1px solid var(--border);border-radius:14px;padding:10px;background:rgba(0,0,0,.18)}
+    .kpi .big{font-size:18px;font-weight:800;line-height:1.1}
+    .kpi .small{font-size:12px;color:var(--muted);margin-top:4px}
+
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .row > *{flex:1;min-width:140px}
+
+    .stat{border:1px solid var(--border);border-radius:14px;padding:10px;background:rgba(0,0,0,.18)}
+    .stat strong{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+
+    .bar{height:8px;border-radius:999px;background:rgba(255,255,255,0.10);overflow:hidden;border:1px solid var(--border);margin-top:7px}
+    .bar > div{height:100%;width:0%;background:linear-gradient(90deg, var(--accent), #a78bfa)}
+
+    .status{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);}
+
+    .hint{font-size:12px;color:var(--muted);line-height:1.35;}
+
+    .log{max-height:240px;overflow:auto;padding-right:4px;font-size:12.5px;}
+    .log div{margin-bottom:6px;opacity:.95;}
+
+    /* Map */
+    #map{height:100%;width:100%;background:var(--bg)}
+
+    /* Mobile: let the panel overlay */
+    @media (max-width: 900px){
+      .wrap{grid-template-columns:1fr}
+      #panel{position:absolute;left:0;top:0;bottom:0;width:360px;max-width:92vw;transform:translateX(-102%);
+        transition:transform .2s ease;box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      }
+      #panel.open{transform:translateX(0)}
+      .mobileToggle{display:inline-flex}
+    }
+    @media (min-width: 901px){
+      .mobileToggle{display:none}
+    }
+
+    /* Leaflet popup readability */
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip{background:#ffffff !important;color:#111827 !important;}
+    .leaflet-popup-content{color:#111827 !important;}
+    .leaflet-popup-content *{color:#111827 !important;}
   </style>
 </head>
 <body>
-  <div id="map"></div>
-
-  <div class="hud">
-    <div class="title">
-      <strong>Go Dot Delivery</strong>
-      <span>Hub routing test</span>
-    </div>
-
-    <div class="row">
-      <div class="stat">
-        <strong>Fuel</strong>
-        <span id="fuelText">—</span>
-        <div class="bar"><div id="fuelBar"></div></div>
+  <div class="wrap">
+    <aside id="panel" aria-label="Game panel">
+      <div class="panelHeader">
+        <div class="top">
+          <div class="left">
+            <h1>Go Dot Delivery</h1>
+            <p>Idle logistics prototype (Birmingham)</p>
+          </div>
+          <button class="btn mobileToggle" id="togglePanelBtn" type="button">Menu</button>
+        </div>
       </div>
-      <div class="stat">
-        <strong>Durability</strong>
-        <span id="durText">—</span>
-        <div class="bar"><div id="durBar"></div></div>
+
+      <!-- Game summary / KPIs (you can expand later) -->
+      <div class="card">
+        <p class="cardTitle">Overview</p>
+        <div class="kpis">
+          <div class="kpi">
+            <div class="big" id="kpiCash">£0</div>
+            <div class="small">Cash (placeholder)</div>
+          </div>
+          <div class="kpi">
+            <div class="big" id="kpiJobs">1</div>
+            <div class="small">Available jobs</div>
+          </div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="status"><span class="dot"></span><span id="dataStatus">Data: —</span></div>
       </div>
-    </div>
 
-    <div class="stat">
-      <strong>Job</strong>
-      <div id="jobText">—</div>
-    </div>
+      <!-- Vehicle stats -->
+      <div class="card hud">
+        <p class="cardTitle">Vehicle</p>
+        <div class="row">
+          <div class="stat">
+            <strong>Fuel</strong>
+            <span id="fuelText">—</span>
+            <div class="bar"><div id="fuelBar"></div></div>
+          </div>
+          <div class="stat">
+            <strong>Durability</strong>
+            <span id="durText">—</span>
+            <div class="bar"><div id="durBar"></div></div>
+          </div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="hint">
+          Van starts low on fuel. Click <b>Start Job</b> — dispatcher should insert a fuel stop automatically, then deliver.
+        </div>
+      </div>
 
-    <div class="btns">
-      <button id="startJobBtn">Start Job</button>
-      <button id="refuelBtn">Send To Fuel</button>
-    </div>
+      <!-- Current job + actions -->
+      <div class="card">
+        <p class="cardTitle">Job</p>
+        <div class="stat" style="margin-bottom:10px">
+          <strong>Current</strong>
+          <div id="jobText">—</div>
+        </div>
 
-    <div class="hint">
-      Van starts low on fuel. Click <b>Start Job</b> — dispatcher should insert a fuel stop automatically, then deliver.
-    </div>
+        <div class="row">
+          <button class="btnPrimary" id="startJobBtn" type="button">Start Job</button>
+          <button class="btn" id="refuelBtn" type="button">Send To Fuel</button>
+        </div>
+      </div>
 
-    <div class="log" id="log"></div>
+      <!-- Game log -->
+      <div class="card">
+        <p class="cardTitle">Game log</p>
+        <div class="log" id="log"></div>
+      </div>
+
+      <div class="card">
+        <p class="cardTitle">Notes</p>
+        <div class="hint">
+          This UI is intentionally “dashboard-like” so you can later drop in weather, traffic, stock/news, fleet upgrades, etc.
+        </div>
+      </div>
+    </aside>
+
+    <main id="map" aria-label="Map"></main>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script>
+    // Mobile panel toggle (purely cosmetic; game still runs even if panel is hidden)
+    (function(){
+      const panel = document.getElementById('panel');
+      const btn = document.getElementById('togglePanelBtn');
+      if (!panel || !btn) return;
+      btn.addEventListener('click', () => panel.classList.toggle('open'));
+    })();
+  </script>
 
   <script src="./app.js"></script>
 </body>
