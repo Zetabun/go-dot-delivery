@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Go Dot Delivery – Hub Routing Prototype</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    html, body { height: 100%; margin: 0; background:#0b0f14; }
+    #map { height: 100%; width: 100%; }
+
+    .hud {
+      position: absolute; z-index: 1000; left: 12px; top: 12px; width: 360px;
+      background: rgba(10,12,16,0.82); color: #fff; padding: 12px; border-radius: 14px;
+      font: 14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      box-shadow: 0 6px 20px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+    .title { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+    .title strong { font-size: 15px; }
+    .title span { opacity:.8; font-size: 12px; }
+    .row { display:flex; gap:10px; margin: 8px 0; }
+    .stat { flex:1; background: rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 12px; }
+    .stat strong { display:block; font-size:12px; opacity:.85; margin-bottom:2px; }
+    .bar { height:8px; border-radius:999px; background: rgba(255,255,255,0.14); overflow:hidden; margin-top:6px; }
+    .bar > div { height:100%; width:0%; background: rgba(255,255,255,0.9); }
+    .btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+    button { border:0; border-radius:12px; padding:10px; cursor:pointer;
+             background: rgba(255,255,255,0.92); color:#000; font-weight:650; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .hint { font-size:12px; opacity:.8; margin-top:8px; }
+    .log { margin-top:10px; background: rgba(255,255,255,0.08);
+           padding:10px; border-radius:12px; max-height:220px; overflow:auto; font-size:12.5px; }
+    .log div { margin-bottom:6px; opacity:.95; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="hud">
+    <div class="title">
+      <strong>Go Dot Delivery</strong>
+      <span>Hub routing test</span>
+    </div>
+
+    <div class="row">
+      <div class="stat">
+        <strong>Fuel</strong>
+        <span id="fuelText">—</span>
+        <div class="bar"><div id="fuelBar"></div></div>
+      </div>
+      <div class="stat">
+        <strong>Durability</strong>
+        <span id="durText">—</span>
+        <div class="bar"><div id="durBar"></div></div>
+      </div>
+    </div>
+
+    <div class="stat">
+      <strong>Job</strong>
+      <div id="jobText">—</div>
+    </div>
+
+    <div class="btns">
+      <button id="startJobBtn">Start Job</button>
+      <button id="refuelBtn">Send To Fuel</button>
+    </div>
+
+    <div class="hint">
+      Van starts low on fuel. Click <b>Start Job</b> — dispatcher should insert a fuel stop automatically, then deliver.
+    </div>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script src="./app.js"></script>
+</body>
+</html>
